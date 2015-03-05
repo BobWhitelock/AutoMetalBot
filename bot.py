@@ -2,7 +2,8 @@
 
 # TODO:
 # include song title when deciding between choices - search discography for match
-# use genre to decide between potential choices
+# use genre to decide between potential choices - fuzzy match?
+# determine if api has up-to-date info - if not is this ok?
 # tidy up
 
 import time

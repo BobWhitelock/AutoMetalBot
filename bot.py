@@ -12,20 +12,10 @@ import time
 import praw
 import requests
 
+SUBREDDIT = 'test'
+USER_AGENT = 'AutoMetalBot-0.1 /u/AutoMetalBot bob.whitelock1@gmail.com'
 METAL_ARCHIVES_API_URL = 'http://perelste.in:8001'
 BAND_SEARCH_API_END_POINT = METAL_ARCHIVES_API_URL + '/api/bands/name/'
-
-# reddit = praw.Reddit(user_agent='AutoMetalBot-0.1 /u/AutoMetalBot bob.whitelock1@gmail.com')
-
-# reddit.login()
-
-# while True:
-# subreddit = reddit.get_subreddit('HeadBangToThis')
-# for submission in subreddit.get_new(limit=50):
-#     print(submission.title + )
-
-    # time.sleep(60)
-
 
 class Title:
 
@@ -96,39 +86,50 @@ class Title:
             self.label = None
 
 
-
 def identify(title):
-    band_name_in_title = title.split('-')[0].strip()
-    band_search_url = BAND_SEARCH_API_END_POINT + band_name_in_title
+    parsed_title = Title(title)
+    if parsed_title.band is None:
+        return ''
+    band_search_url = BAND_SEARCH_API_END_POINT + parsed_title.band
     band_search_response = requests.get(band_search_url)
-    potential_bands = band_search_response.json()
+    band_search_json = band_search_response.json()
 
-    bands_with_exact_name = []
-    for potential_band in potential_bands:
-        if potential_band['name'].lower() == band_name_in_title.lower():
-            bands_with_exact_name.append(potential_band)
+    potential_bands = [band for band in band_search_json if band['name'].lower() == parsed_title.band.lower()]
 
-    number_exact_matches = len(bands_with_exact_name)
+    number_exact_matches = len(potential_bands)
     if number_exact_matches == 0:
         return ''
     elif number_exact_matches == 1:
-        return bands_with_exact_name[0]['url']
+        return potential_bands[0]['url']
     else:
-        print('\nPossibles: ' + str(bands_with_exact_name) + '\n')
+        print('\nPossibles: ' + str(potential_bands) + '\n')
         return ''
 
     time.sleep(1)
 
 
-# def find_bands_with
+def run():
+    reddit = praw.Reddit(user_agent=USER_AGENT)
+    reddit.login()
+    while True:
+        subreddit = reddit.get_subreddit(SUBREDDIT)
+        for submission in subreddit.get_new(limit=50):
+            band_page = identify(submission.title)
+            if band_page != '':
+                submission.add_comment(band_page)
+        time.sleep(5000)
+
 
 
 if __name__ == '__main__':
+    run()
+
+
     # identify('Voices')
 
-    t = Title('Cloud Rat - Blind River [Metallic Hardcore] (Halo of Flies)')
-    print(t.band)
-    print(t.song)
-    print(t.genre)
-    print(t.label)
-    print(t.further_description)
+    # t = Title('Cloud Rat - Blind River [Metallic Hardcore] (Halo of Flies)')
+    # print(t.band)
+    # print(t.song)
+    # print(t.genre)
+    # print(t.label)
+    # print(t.further_description)

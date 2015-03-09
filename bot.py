@@ -7,6 +7,7 @@
 # tidy up
 
 import re
+import sys
 import time
 
 import praw
@@ -16,6 +17,7 @@ SUBREDDIT = 'test'
 USER_AGENT = 'AutoMetalBot-0.1 /u/AutoMetalBot bob.whitelock1@gmail.com'
 METAL_ARCHIVES_API_URL = 'http://perelste.in:8001'
 BAND_SEARCH_API_END_POINT = METAL_ARCHIVES_API_URL + '/api/bands/name/'
+ALREADY_DONE_FILE = 'done'
 
 class Title:
 
@@ -89,7 +91,7 @@ class Title:
 def identify(title):
     parsed_title = Title(title)
     if parsed_title.band is None:
-        return ''
+        return None
     band_search_url = BAND_SEARCH_API_END_POINT + parsed_title.band
     band_search_response = requests.get(band_search_url)
     band_search_json = band_search_response.json()
@@ -106,17 +108,47 @@ def identify(title):
         return None
 
 
+class AlreadyDone:
+    def __init__(self):
+        self.done = self._read()
+
+    def _read(self):
+        try:
+            with open(ALREADY_DONE_FILE) as f:
+                return {line.strip() for line in f.readlines()}
+        except FileNotFoundError:
+            return set()
+
+    def add(self, submission_id):
+        try:
+            with open(ALREADY_DONE_FILE, 'a') as f:
+                f.write(submission_id + '\n')
+                self.done.add(submission_id)
+        except Exception as e:
+            # TODO log this
+            print('Caught exception: ', e)
+            sys.exit(1)
+
+    def __contains__(self, submission_id):
+        return submission_id in self.done
+
+
 def run():
+    already_done = AlreadyDone()
     reddit = praw.Reddit(user_agent=USER_AGENT)
     reddit.login()
     while True:
         subreddit = reddit.get_subreddit(SUBREDDIT)
-        for submission in subreddit.get_new(limit=50):
-            band_page = identify(submission.title)
-            if band_page != '':
-                submission.add_comment(band_page)
-        time.sleep(5000)
+        for submission in subreddit.get_new(limit=10):
+            if submission.id not in already_done:
+                band_page = identify(submission.title)
+                if band_page is not None:
+                    # submission.add_comment(band_page)
+                    print('would have written: ' + band_page)
+                already_done.add(submission.id)
 
+
+        time.sleep(30)
 
 
 if __name__ == '__main__':

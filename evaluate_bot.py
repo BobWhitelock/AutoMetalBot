@@ -28,11 +28,11 @@ def evaluate_identify():
 
     for row in rows:
         title = row[0]
-        correct_link = row[2]
+        correct_link = row[2] if row[2] != '' else None
         identified_link = bot.identify(title)
         if identified_link == correct_link:
             total_identified += 1
-            if correct_link == "":
+            if correct_link is None:
                 no_correct_link_exists_identified += 1
             else:
                 correct_link_exists_identified += 1
@@ -45,8 +45,8 @@ def evaluate_identify():
     print("\nMisidentified:")
     for identified_link, row in misidentified:
         title = row[0]
-        correct_link = row[2]
-        print("'{}' identified as '{}'. Correct link: '{}'".format(title, identified_link, correct_link))
+        correct_link = row[2] if row[2] != '' else None
+        print("'{}' identified as {}. Correct link: {}".format(title, identified_link, correct_link))
     print()
 
 if __name__ == '__main__':

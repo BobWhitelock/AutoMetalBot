@@ -94,18 +94,16 @@ def identify(title):
     band_search_response = requests.get(band_search_url)
     band_search_json = band_search_response.json()
 
-    potential_bands = [band for band in band_search_json if band['name'].lower() == parsed_title.band.lower()]
+    candidates = [band for band in band_search_json if band['name'].lower() == parsed_title.band.lower()]
 
-    number_exact_matches = len(potential_bands)
-    if number_exact_matches == 0:
-        return ''
-    elif number_exact_matches == 1:
-        return potential_bands[0]['url']
+    number_candidates = len(candidates)
+    if number_candidates == 0:
+        return None
+    elif number_candidates == 1:
+        return candidates[0]['url']
     else:
-        print('\nPossibles: ' + str(potential_bands) + '\n')
-        return ''
-
-    time.sleep(1)
+        print('\nPossibles: ' + str(candidates) + '\n')
+        return None
 
 
 def run():

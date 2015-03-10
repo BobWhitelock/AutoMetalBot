@@ -3,8 +3,10 @@
 # TODO:
 # include song title when deciding between choices - search discography for match
 # use genre to decide between potential choices - fuzzy match?
-# determine if api has up-to-date info - if not is this ok?
-# tidy up
+# determine if api has up-to-date info - does not and one evaluation title not identified but in metal archives
+# - options: add update scraping to api; use alternative api which scrapes on request; make direct requests as part of bot
+# add evaluation for title parsing
+# add tests
 
 import logging
 import re

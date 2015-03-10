@@ -17,7 +17,7 @@ SUBREDDIT = 'test'
 USER_AGENT = 'AutoMetalBot-0.1 /u/AutoMetalBot bob.whitelock1@gmail.com'
 METAL_ARCHIVES_API_URL = 'http://perelste.in:8001'
 BAND_SEARCH_API_END_POINT = METAL_ARCHIVES_API_URL + '/api/bands/name/'
-ALREADY_DONE_FILE = 'done'
+ALREADY_DONE_FILE = 'done_temp'
 
 class Title:
 
@@ -133,26 +133,38 @@ class AlreadyDone:
         return submission_id in self.done
 
 
-def run():
-    already_done = AlreadyDone()
-    reddit = praw.Reddit(user_agent=USER_AGENT)
-    reddit.login()
-    while True:
-        subreddit = reddit.get_subreddit(SUBREDDIT)
-        for submission in subreddit.get_new(limit=10):
-            if submission.id not in already_done:
-                band_page = identify(submission.title)
-                if band_page is not None:
-                    # submission.add_comment(band_page)
-                    print('would have written: ' + band_page)
-                already_done.add(submission.id)
+class Bot:
+    def __init__(self):
+        self.already_done = AlreadyDone()
+        self.reddit = praw.Reddit(user_agent=USER_AGENT)
+        self.reddit.login()
 
+    def run(self):
+        while True:
+            try:
+                subreddit = self.reddit.get_subreddit(SUBREDDIT)
+                for submission in subreddit.get_new(limit=10):
+                    try:
+                        self._process_submission(submission)
+                    except Exception as e:
+                        print(e)
+            except Exception as e:
+                print(e)
 
-        time.sleep(30)
+            time.sleep(30)
+
+    def _process_submission(self, submission):
+        if submission.id not in self.already_done:
+            band_page = identify(submission.title)
+            if band_page is not None:
+                # submission.add_comment(band_page)
+                print('would have written: ' + band_page)
+            self.already_done.add(submission.id)
 
 
 if __name__ == '__main__':
-    run()
+    bot = Bot()
+    bot.run()
 
 
     # identify('Voices')

@@ -16,6 +16,7 @@ import time
 import praw
 import requests
 
+
 DEBUG = True
 SUBREDDIT = 'test'
 USER_AGENT = 'AutoMetalBot-0.1 /u/AutoMetalBot bob.whitelock1@gmail.com'
@@ -25,7 +26,12 @@ ALREADY_DONE_FILE = 'done_temp'
 RUN_INTERVAL = 10
 LOG_FILE = None if DEBUG else 'bot.log'
 
-logging.basicConfig(level=logging.DEBUG, filename=None, format='%(levelname)s[%(asctime)s]:%(funcName)s:%(message)s')
+logging.basicConfig(
+    level=logging.DEBUG,
+    filename=LOG_FILE,
+    format='%(levelname)s[%(asctime)s]:%(funcName)s:%(message)s'
+)
+
 
 class Title:
 
@@ -133,7 +139,7 @@ class AlreadyDone:
                 f.write(submission_id + '\n')
                 self.done.add(submission_id)
         except Exception:
-            logging.exception('Exception adding to already done file, quitting.')
+            logging.exception('Exception adding to already done file, quitting:')
             sys.exit(1)
 
     def __contains__(self, submission_id):
@@ -154,9 +160,9 @@ class Bot:
                     try:
                         self._process_submission(submission)
                     except Exception:
-                        logging.exception("Exception while processing submission '{}'.".format(submission.title))
+                        logging.exception("Exception while processing submission '{}':".format(submission.title))
             except Exception:
-                logging.exception("Exception while getting submissions.")
+                logging.exception("Exception while getting submissions:")
 
             time.sleep(RUN_INTERVAL)
 

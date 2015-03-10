@@ -6,6 +6,7 @@
 # determine if api has up-to-date info - if not is this ok?
 # tidy up
 
+import logging
 import re
 import sys
 import time
@@ -13,11 +14,16 @@ import time
 import praw
 import requests
 
+DEBUG = True
 SUBREDDIT = 'test'
 USER_AGENT = 'AutoMetalBot-0.1 /u/AutoMetalBot bob.whitelock1@gmail.com'
 METAL_ARCHIVES_API_URL = 'http://perelste.in:8001'
 BAND_SEARCH_API_END_POINT = METAL_ARCHIVES_API_URL + '/api/bands/name/'
 ALREADY_DONE_FILE = 'done_temp'
+RUN_INTERVAL = 10
+LOG_FILE = None if DEBUG else 'bot.log'
+
+logging.basicConfig(level=logging.DEBUG, filename=None, format='%(levelname)s[%(asctime)s]:%(funcName)s:%(message)s')
 
 class Title:
 
@@ -124,9 +130,8 @@ class AlreadyDone:
             with open(ALREADY_DONE_FILE, 'a') as f:
                 f.write(submission_id + '\n')
                 self.done.add(submission_id)
-        except Exception as e:
-            # TODO log this
-            print('Caught exception: ', e)
+        except Exception:
+            logging.exception('Exception adding to already done file, quitting.')
             sys.exit(1)
 
     def __contains__(self, submission_id):
@@ -146,12 +151,12 @@ class Bot:
                 for submission in subreddit.get_new(limit=10):
                     try:
                         self._process_submission(submission)
-                    except Exception as e:
-                        print(e)
-            except Exception as e:
-                print(e)
+                    except Exception:
+                        logging.exception("Exception while processing submission '{}'.".format(submission.title))
+            except Exception:
+                logging.exception("Exception while getting submissions.")
 
-            time.sleep(30)
+            time.sleep(RUN_INTERVAL)
 
     def _process_submission(self, submission):
         if submission.id not in self.already_done:

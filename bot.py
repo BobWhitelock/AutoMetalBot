@@ -18,12 +18,12 @@ import requests
 
 
 DEBUG = True
-SUBREDDIT = 'test'
+SUBREDDIT = 'headbangtothis'
 USER_AGENT = 'AutoMetalBot-0.1 /u/AutoMetalBot bob.whitelock1@gmail.com'
 METAL_ARCHIVES_API_URL = 'http://perelste.in:8001'
 BAND_SEARCH_API_END_POINT = METAL_ARCHIVES_API_URL + '/api/bands/name/'
-ALREADY_DONE_FILE = 'done_temp'
-RUN_INTERVAL = 10
+ALREADY_DONE_FILE = 'done.debug' if DEBUG else 'done'
+RUN_INTERVAL = 60 * 30
 LOG_FILE = None if DEBUG else 'bot.log'
 
 logging.basicConfig(
@@ -60,7 +60,7 @@ class Title:
             self._parse_genre()
             self._parse_label()
 
-            self.further_description = self._title_remainder
+            self.further_description = self._title_remainder if self._title_remainder != '' else None
         else:
             # if title not split along separator then does not conform to
             # format so can't parse, so set all fields to None
@@ -101,11 +101,17 @@ class Title:
         else:
             self.label = None
 
+    def __repr__(self):
+        return "Title(band='{0}', song='{1}', genre='{2}', label='{3}', further_description='{4}'')".format(
+            self.band, self.song, self.genre, self.label, self.further_description)
 
-def identify(title):
-    parsed_title = Title(title)
+
+def identify(submission):
+    parsed_title = Title(submission.title)
+    logging.info("{} parsed as {}".format(submission_log_string(submission), parsed_title))
     if parsed_title.band is None:
         return None
+
     band_search_url = BAND_SEARCH_API_END_POINT + parsed_title.band
     band_search_response = requests.get(band_search_url)
     band_search_json = band_search_response.json()
@@ -160,7 +166,7 @@ class Bot:
                     try:
                         self._process_submission(submission)
                     except Exception:
-                        logging.exception("Exception while processing submission '{}':".format(submission.title))
+                        logging.exception("Exception while processing {}:".format(submission_log_string(submission)))
             except Exception:
                 logging.exception("Exception while getting submissions:")
 
@@ -168,23 +174,22 @@ class Bot:
 
     def _process_submission(self, submission):
         if submission.id not in self.already_done:
-            band_page = identify(submission.title)
+            band_page = identify(submission)
+            logging.info("{} identified as {}".format(submission_log_string(submission), band_page))
             if band_page is not None:
-                # submission.add_comment(band_page)
-                print('would have written: ' + band_page)
+                comment = band_page
+                if DEBUG:
+                    logging.info("Would have added comment '{}' to {} if not in debug mode.".format(comment, submission_log_string(submission)))
+                else:
+                    logging("Adding comment '{}' to {}.".format(comment, submission_log_string(submission)))
+                    submission.add_comment(band_page)
             self.already_done.add(submission.id)
+
+
+def submission_log_string(submission):
+    return "'{}' ({})".format(submission.title, submission.short_link)
 
 
 if __name__ == '__main__':
     bot = Bot()
     bot.run()
-
-
-    # identify('Voices')
-
-    # t = Title('Cloud Rat - Blind River [Metallic Hardcore] (Halo of Flies)')
-    # print(t.band)
-    # print(t.song)
-    # print(t.genre)
-    # print(t.label)
-    # print(t.further_description)

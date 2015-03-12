@@ -29,7 +29,8 @@ def evaluate_identify():
     for row in rows:
         title = row[0]
         correct_link = row[2] if row[2] != '' else None
-        identified_link = bot.identify(title)
+        parsed_title = bot.Title(title)
+        identified_link = bot.identify(parsed_title)
         if identified_link == correct_link:
             total_identified += 1
             if correct_link is None:

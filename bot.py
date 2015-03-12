@@ -106,9 +106,7 @@ class Title:
             self.band, self.song, self.genre, self.label, self.further_description)
 
 
-def identify(submission):
-    parsed_title = Title(submission.title)
-    logging.info("{} parsed as {}".format(submission_log_string(submission), parsed_title))
+def identify(parsed_title):
     if parsed_title.band is None:
         return None
 
@@ -126,7 +124,6 @@ def identify(submission):
         songs = [song['name'] for release in releases for song in release['songs']]
         if any([song == parsed_title.song for song in songs]):
             return candidate['url']
-
 
 
 def do_band_search(band_name):
@@ -187,7 +184,9 @@ class Bot:
 
     def _process_submission(self, submission):
         if submission.id not in self.already_done:
-            band_page = identify(submission)
+            parsed_title = Title(submission.title)
+            logging.info("{} parsed as {}".format(submission_log_string(submission), parsed_title))
+            band_page = identify(parsed_title)
             logging.info("{} identified as {}".format(submission_log_string(submission), band_page))
             if band_page is not None:
                 comment = band_page

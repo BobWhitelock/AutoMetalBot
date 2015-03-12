@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 # TODO:
-# include song title when deciding between choices - search discography for match
 # use genre to decide between potential choices - fuzzy match?
 # determine if api has up-to-date info - does not and one evaluation title not identified but in metal archives
 # - options: add update scraping to api; use alternative api which scrapes on request; make direct requests as part of bot
@@ -22,6 +21,7 @@ SUBREDDIT = 'headbangtothis'
 USER_AGENT = 'AutoMetalBot-0.1 /u/AutoMetalBot bob.whitelock1@gmail.com'
 METAL_ARCHIVES_API_URL = 'http://perelste.in:8001'
 BAND_SEARCH_API_END_POINT = METAL_ARCHIVES_API_URL + '/api/bands/name/'
+RELEASES_SEARCH_API_ENDPOINT = METAL_ARCHIVES_API_URL + '/api/releases/band_id/'
 ALREADY_DONE_FILE = 'done.debug' if DEBUG else 'done'
 RUN_INTERVAL = 60 * 30
 LOG_FILE = None if DEBUG else 'bot.log'
@@ -112,10 +112,7 @@ def identify(submission):
     if parsed_title.band is None:
         return None
 
-    band_search_url = BAND_SEARCH_API_END_POINT + parsed_title.band
-    band_search_response = requests.get(band_search_url)
-    band_search_json = band_search_response.json()
-
+    band_search_json = do_band_search(parsed_title.band)
     candidates = [band for band in band_search_json if band['name'].lower() == parsed_title.band.lower()]
 
     number_candidates = len(candidates)
@@ -123,9 +120,25 @@ def identify(submission):
         return None
     elif number_candidates == 1:
         return candidates[0]['url']
-    else:
-        print('\nPossibles: ' + str(candidates) + '\n')
-        return None
+
+    for candidate in candidates:
+        releases = do_band_releases_search(candidate['id'])
+        songs = [song['name'] for release in releases for song in release['songs']]
+        if any([song == parsed_title.song for song in songs]):
+            return candidate['url']
+
+
+
+def do_band_search(band_name):
+    band_search_url = BAND_SEARCH_API_END_POINT + band_name + '/'
+    band_search_response = requests.get(band_search_url)
+    return band_search_response.json()
+
+
+def do_band_releases_search(band_id):
+    releases_search_url = RELEASES_SEARCH_API_ENDPOINT + str(band_id) + '/'
+    releases_search_response = requests.get(releases_search_url)
+    return releases_search_response.json()
 
 
 class AlreadyDone:
